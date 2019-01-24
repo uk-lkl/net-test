@@ -1,0 +1,8 @@
+### Invisible option for dependencies
+config APPNETTEST_DEPENDENCIES
+	bool
+	default y
+	select LIBLKL
+	select LIBNEWLIBC
+
+### App configuration

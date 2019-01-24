@@ -1,0 +1,8 @@
+$(eval $(call addlib,appnettest))
+
+APPNETTEST_SRCS-y += $(APPNETTEST_BASE)/net-test.c
+APPNETTEST_SRCS-y += $(APPNETTEST_BASE)/test.c
+
+APPNETTEST_CFLAGS-y += -D__FIBER__
+
+APPNETTEST_CINCLUDES += $(APPNETTEST_BASE)
