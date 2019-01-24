@@ -6,3 +6,27 @@ config APPNETTEST_DEPENDENCIES
 	select LIBNEWLIBC
 
 ### App configuration
+config APPNETTEST_DHCP
+	prompt "use dhcp to configure LKL"
+	bool
+	default n
+
+config APPNETTEST_IP
+	prompt "IPv4 address to use"
+	string
+	default "255.255.255.255"
+
+config APPNETTEST_NMLEN
+	prompt "IPv4 netmask length"
+	int
+	default 0
+
+config APPNETTEST_GATEWAY
+	prompt "IPv4 gateway to use"
+	string
+	default "255.255.255.255"
+
+config APPNETTEST_DST
+	prompt "IPv4 destination address"
+	string
+	default "255.255.255.255"

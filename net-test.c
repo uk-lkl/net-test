@@ -2,9 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include <lkl.h>
 #include <lkl_host.h>
+
+#include <uk/config.h>
 
 #include "test.h"
 
@@ -35,6 +38,40 @@ static struct {
 	.dst = INADDR_NONE,
 	.sleep = 0,
 };
+
+int inet_pton(int af, const char *src, void *dst)
+{
+	unsigned char *a = dst;
+	int i, j, v;
+
+	if (af != AF_INET)
+        	return -1;
+
+        for (i = 0; i < 4; i++) {
+		for (v = j = 0; j < 3 && isdigit(src[j]); j++)
+			v = 10 * v + src[j] - '0';
+                if (j == 0 || (j > 1 && src[0] == '0') || v > 255) return 0;
+                a[i] = v;
+                if (src[j] == 0 && i == 3) return 1;
+                if (src[j] != '.') return 0;
+                src += j + 1;
+        }
+
+        return 0;
+}
+
+const char *inet_ntop(int af, const void *src, char *dst, size_t len)
+{
+	const unsigned char *a = src;
+
+        if (af != AF_INET)
+        	return 0;
+
+        if (snprintf(dst, len, "%d.%d.%d.%d", a[0], a[1], a[2], a[3]) < len)
+        	return dst;
+
+        return 0;
+}
 
 uint16_t bswap_16(uint16_t n)
 {
@@ -95,6 +132,7 @@ static int lkl_test_icmp(void)
 	struct lkl_sockaddr_in saddr;
 	struct lkl_pollfd pfd;
 	char buf[32];
+        char ip[16];
 
 	if (cla.dst == INADDR_NONE)
 		return TEST_SKIP;
@@ -103,7 +141,8 @@ static int lkl_test_icmp(void)
 	saddr.sin_family = AF_INET;
 	saddr.sin_addr.lkl_s_addr = cla.dst;
 
-	lkl_test_logf("pinging 0x%04x\n", saddr.sin_addr);
+	lkl_test_logf("pinging %s\n",
+                      inet_ntop(AF_INET, &saddr.sin_addr, ip, 16));
 
 	sock = lkl_sys_socket(LKL_AF_INET, LKL_SOCK_RAW, LKL_IPPROTO_ICMP);
 	if (sock < 0) {
@@ -275,6 +314,19 @@ static int lkl_test_set_gateway(void)
 	return TEST_SUCCESS;
 }
 
+static int setup_cla(void)
+{
+#ifdef CONFIG_APPNETTEST_DHCP
+	cla.dhcp = 1;
+#endif
+	if (inet_pton(AF_INET, CONFIG_APPNETTEST_IP, &cla.ip) != 1) return 1;
+        cla.nmlen = CONFIG_APPNETTEST_NMLEN;
+	if (inet_pton(AF_INET, CONFIG_APPNETTEST_GATEWAY, &cla.gateway) != 1) return 1;
+        if (inet_pton(AF_INET, CONFIG_APPNETTEST_DST, &cla.dst) != 1) return 1;
+
+        return 0;
+}
+
 struct lkl_test tests[] = {
 	LKL_TEST(nd_create),
 	LKL_TEST(nd_add),
@@ -293,7 +345,7 @@ struct lkl_test tests[] = {
 
 int main(int argc, const char **argv)
 {
-	cla.dst = LOOPBACK_ADDR;
+	if (setup_cla()) return -1;
 
 	if (cla.ip != LKL_INADDR_NONE && (cla.nmlen < 0 || cla.nmlen > 32)) {
 		fprintf(stderr, "invalid netmask length %d\n", cla.nmlen);
