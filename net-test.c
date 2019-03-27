@@ -106,7 +106,6 @@ in_cksum(const u_short *addr, register int len, u_short csum)
 	return answer;
 }
 
-#ifndef __FIBER__
 static int lkl_test_sleep(void)
 {
 	struct lkl_timespec ts = {
@@ -122,7 +121,6 @@ static int lkl_test_sleep(void)
 
 	return TEST_SUCCESS;
 }
-#endif
 
 static int lkl_test_icmp(void)
 {
@@ -335,9 +333,7 @@ struct lkl_test tests[] = {
 	LKL_TEST(if_up),
 	LKL_TEST(set_ipv4),
 	LKL_TEST(set_gateway),
-#ifndef __FIBER__
 	LKL_TEST(sleep),
-#endif
 	LKL_TEST(icmp),
 	LKL_TEST(nd_remove),
 	LKL_TEST(stop_kernel),
